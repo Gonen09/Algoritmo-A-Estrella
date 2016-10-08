@@ -1,7 +1,4 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Clases
-# ---------------------------------------------------------------------
 import time
 import os
 import random
@@ -46,13 +43,11 @@ class Mapa:
             salida += "\n"
         return salida
 
-    def camino(self, lista):
+    def caminoTexto(self, lista):
 
         # muestra el camino que recorre definido con ". . . ."
 
-        del lista[-1]
-
-        for i in range(len(lista)):
+        for i in range(len(lista) - 1):
             self.mapa[lista[i][0]][lista[i][1]] = 4
             print self
             time.sleep(TIEMPO_ESPERA)
@@ -128,9 +123,7 @@ class Mapa:
 
         # Dibujar camino
 
-        del lista[-1]
-
-        for i in range(len(lista)):
+        for i in range(len(lista) - 1):
             pantalla.blit(s1, [lista[i][1] * TAM_TEXTURA, lista[i][0] * TAM_TEXTURA])
             pygame.display.update()
             time.sleep(TIEMPO_ESPERA)
@@ -170,12 +163,14 @@ class Nodo:
         else:
             self.g = self.padre.g + 1
 
+        # Peso del nodo
         self.f = self.g + self.h
 
 
 class AEstrella:
-    # abierta: Priority Queue ordenada por el valor de f(n)
-    # cerrada: se guarda la info de los nodos ya visitados.
+
+    # abierta: Lista con los nuevos nodos visitados (vecinos)
+    # cerrada: Lista con los nodos ya visitados
 
     def __init__(self, mapa):
         self.mapa = mapa
@@ -200,8 +195,8 @@ class AEstrella:
             print "Dentro de A Estrella"
             if self.fin.pos != pos_f:
                 print "Mapa cambiado"
-                self.recargar()
-
+                self.reInicio(self.inicio, self.cerrada[-1])
+                self.recargar(self.mapa)
             self.buscar()
 
         print "Fuera de A Estrella"
@@ -285,12 +280,21 @@ class AEstrella:
 
         return camino
 
+    # Crea nuevo punto de partida
+
+    def reInicio(self, nodo_inicial, nodo_actual):
+
+        inicio_original = nodo_inicial.pos
+        inicio_nuevo = nodo_actual.pos  # ultimo nodo en lista cerrada
+        self.mapa.mapa[inicio_original[0]][inicio_original[1]] = 0  # " "
+        self.mapa.mapa[inicio_nuevo[0]][inicio_nuevo[1]] = 2  # "T"
+
     # Recargar datos iniciales
-    def recargar(self):
+    def recargar(self, mapa):
 
         # Nodos de inicio y fin.
         self.inicio = Nodo(buscarPos(2, mapa))  # busca una T (entrada)
-        self.fin = Nodo(buscarPos(3, self.mapa))  # busca una S (salida)
+        self.fin = Nodo(buscarPos(3, mapa))  # busca una S (salida)
 
         # Crea las listas abierta y cerrada.
         self.abierta = []
@@ -355,12 +359,14 @@ def leerMapa(archivo):
     return mapa
 
 
+# Comprueba si existe el archivo
 def existeArchivo(archivo):
 
     if os.path.exists(archivo):
         return True
     else:
         return False
+
 
 # Genera una nueva posicion de salida valida
 def nuevaSalida(mapa):
@@ -387,39 +393,36 @@ def nuevaSalida(mapa):
 
 def cambiarSalida(mapa):
 
-    print "Inicio hilo"
+    print "Inicio cambio mapa"
+    print mapa
 
     salida_original = pos_f  # S
     salida_nueva = nuevaSalida(mapa)
 
-    print mapa
+    # Comprueba si la salida está en los bordes del mapa
 
-    # Comprueba si la salida está en los bordes
     if (salida_original[0] == 0) or (salida_original[0] == (mapa.fil - 1)) or \
        (salida_original[1] == 0) or (salida_original[1] == (mapa.col - 1)):
         mapa.mapa[salida_original[0]][salida_original[1]] = 1  # "#"
     else:
-        mapa.mapa[salida_original[0]][salida_original[1]] = 0  # "."
+        mapa.mapa[salida_original[0]][salida_original[1]] = 0  # " "
 
     mapa.mapa[salida_nueva[0]][salida_nueva[1]] = 3  # "S"
     globals()["pos_f"] = salida_nueva
 
     print mapa
-
-    print "fin hilo"
+    print "fin cambio mapa"
 
 
 def resolverLaberinto(mapa):
 
     A = AEstrella(mapa)
     globals()["Fin"] = True
-    # mapa.camino(A.camino)
+    # mapa.caminoTexto(A.camino)
     mapa.caminoGrafico(A.camino)
     os.system("cls")
-    return A
 
 # ---------------------------------------------------------------------
-
 
 def main():
 
@@ -429,13 +432,11 @@ def main():
 
     cs = threading.Thread(target=resolverLaberinto, args=(mapa,))
     cs.start()
-    print "posicion final" + str(pos_f)
 
     while cs.isAlive():
 
         if Fin is False:
             cambiarSalida(mapa)
-            print "posicion final" + str(pos_f)
         time.sleep(1)
 
     return 0
