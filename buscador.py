@@ -6,7 +6,7 @@ import threading
 import pygame
 
 
-TIEMPO_ESPERA = 0.4
+TIEMPO_ESPERA = 0.5
 TAM_TEXTURA = 32  # 32 x 32
 
 # Colores
@@ -19,6 +19,7 @@ AZUL = (0, 0, 255)
 
 
 class Mapa:
+
     def __init__(self, archivo="mapas/mapa.txt"):
         self.mapa = leerMapa(archivo)
         self.fil = len(self.mapa)
@@ -43,7 +44,7 @@ class Mapa:
             salida += "\n"
         return salida
 
-    def caminoTexto(self, lista):
+    def camino(self, lista):
 
         # muestra el camino que recorre definido con ". . . ."
 
@@ -52,104 +53,6 @@ class Mapa:
             print self
             time.sleep(TIEMPO_ESPERA)
             os.system("cls")
-
-    def caminoGrafico(self, lista):
-
-        # Inicializar graficos
-        pygame.init()
-        pygame.display.set_caption("Laberinto")
-        tam_vertical = self.fil * TAM_TEXTURA
-        tam_horizontal = self.col * TAM_TEXTURA
-        pantalla = pygame.display.set_mode([tam_horizontal, tam_vertical])
-        pantalla.fill(NEGRO)
-        dim_textura = [TAM_TEXTURA, TAM_TEXTURA]
-
-        # Superficie, colores y texturas
-
-        fondo = "texturas/fondo.png"
-        personaje = "texturas/trugg.png"
-        muro = "texturas/bloque" + str(random.randint(1, 7)) + ".png"
-        entrada = "texturas/entrada.png"
-        salida = "texturas/salida.png"
-
-        if existeArchivo(fondo):
-            s0 = pygame.image.load(fondo)
-        else:
-            s0 = pygame.Surface(dim_textura)
-            s0.fill(NEGRO)
-
-        if existeArchivo(personaje):
-            s1 = pygame.image.load(personaje)
-        else:
-            s1 = pygame.Surface(dim_textura)
-            s1.fill(BLANCO)
-
-        if existeArchivo(muro):
-            s2 = pygame.image.load("texturas/bloque" + str(random.randint(1, 7)) + ".png")
-        else:
-            s2 = pygame.Surface(dim_textura)
-            s2.fill(ROJO)
-
-        if existeArchivo(salida):
-            s3 = pygame.image.load(salida)
-        else:
-            s3 = pygame.Surface(dim_textura)
-            s3.fill(VERDE)
-
-        if existeArchivo(entrada):
-            s4 = pygame.image.load(entrada)
-        else:
-            s4 = pygame.Surface(dim_textura)
-            s4.fill(AZUL)
-
-        # Dibujar mapa
-
-        x = 0
-        y = 0
-
-        for f in range(self.fil):
-            for c in range(self.col):
-
-                if self.mapa[f][c] == 0:
-                    pantalla.blit(s0, [c * TAM_TEXTURA, f * TAM_TEXTURA])  # " "
-                if self.mapa[f][c] == 1:
-                    pantalla.blit(s2, [c * TAM_TEXTURA, f * TAM_TEXTURA])  # "#"
-                if self.mapa[f][c] == 2:
-                    pantalla.blit(s4, [c * TAM_TEXTURA, f * TAM_TEXTURA])  # "T"
-                if self.mapa[f][c] == 3:
-                    pantalla.blit(s3, [c * TAM_TEXTURA, f * TAM_TEXTURA])  # "S"
-                    x = c
-                    y = f
-
-        # Dibujar camino
-
-        for i in range(len(lista) - 1):
-            pantalla.blit(s1, [lista[i][1] * TAM_TEXTURA, lista[i][0] * TAM_TEXTURA])
-            pygame.display.update()
-            time.sleep(TIEMPO_ESPERA)
-
-            if i is not len(lista):
-                pantalla.blit(s0, [lista[i][1] * TAM_TEXTURA, lista[i][0] * TAM_TEXTURA])
-                pygame.display.update()
-
-        # Cerrar puerta
-        pantalla.blit(s4, [x * TAM_TEXTURA, y * TAM_TEXTURA])  # "S"
-        pygame.display.update()
-
-        # Visualizar graficos
-
-        salida = False
-        reloj = pygame.time.Clock()
-
-        while salida is not True:
-            for event in pygame.event.get():
-                if event.type is pygame.QUIT:
-                    salida = True
-
-            reloj.tick(20)
-            pygame.display.update()
-
-        pygame.quit()
 
 
 class Nodo:
@@ -190,13 +93,20 @@ class AEstrella:
         self.abierta += self.vecinos(self.inicio)
 
         # Buscar mientras objetivo no este en la lista cerrada.
-        while self.objetivo():
+        g = Grafica(self.mapa)
 
+        while self.objetivo():
+            print "inicial: " + str(self.inicio.pos)
+            print "actual: " + str(self.cerrada[-1].pos)
+            print "final: " + str(self.fin.pos)
+            g.dibujarMapa()
             print "Dentro de A Estrella"
             if self.fin.pos != pos_f:
                 print "Mapa cambiado"
+                time.sleep(TIEMPO_ESPERA)
                 self.reInicio(self.inicio, self.cerrada[-1])
                 self.recargar(self.mapa)
+                time.sleep(TIEMPO_ESPERA)
             self.buscar()
 
         print "Fuera de A Estrella"
@@ -306,6 +216,134 @@ class AEstrella:
         # Añade los vecinos a la lista abierta
         self.abierta += self.vecinos(self.inicio)
 
+
+class Grafica:
+
+    def __init__(self, mapa):
+
+        # Dimensiones
+        self.mapa = mapa
+        self.dimx = mapa.col * TAM_TEXTURA
+        self.dimy = mapa.fil * TAM_TEXTURA
+        self.dimTextura = [TAM_TEXTURA, TAM_TEXTURA]
+
+        # Inicializar graficos
+        pygame.init()
+        pygame.display.set_caption("Laberinto")
+        self.pantalla = pygame.display.set_mode([self.dimx, self.dimy])
+        self.pantalla.fill(NEGRO)
+        self.texturas = self.cargarTexturas()
+
+    def cargarTexturas(self):
+
+        texturas = []
+        fondo = "texturas/fondo.png"
+        muro = "texturas/bloque" + str(random.randint(1, 7)) + ".png"
+        entrada = "texturas/entrada.png"
+        salida = "texturas/salida.png"
+        personaje = "texturas/trugg.png"
+
+        if existeArchivo(fondo):
+            s0 = pygame.image.load(fondo)
+        else:
+            s0 = pygame.Surface(self.dimTextura)
+            s0.fill(NEGRO)
+        texturas.append(s0)
+
+        if existeArchivo(muro):
+            s1 = pygame.image.load("texturas/bloque" + str(random.randint(1, 7)) + ".png")
+        else:
+            s1 = pygame.Surface(self.dimTextura)
+            s1.fill(ROJO)
+        texturas.append(s1)
+
+        if existeArchivo(entrada):
+            s2 = pygame.image.load(entrada)
+        else:
+            s2 = pygame.Surface(self.dimTextura)
+            s2.fill(AZUL)
+        texturas.append(s2)
+
+        if existeArchivo(salida):
+            s3 = pygame.image.load(salida)
+        else:
+            s3 = pygame.Surface(self.dimTextura)
+            s3.fill(VERDE)
+        texturas.append(s3)
+
+        if existeArchivo(personaje):
+            s4 = pygame.image.load(personaje)
+        else:
+            s4 = pygame.Surface(self.dimTextura)
+            s4.fill(BLANCO)
+        texturas.append(s4)
+
+        return texturas
+
+    def crearMapa(self):
+
+        for f in range(self.mapa.fil):
+            for c in range(self.mapa.col):
+
+                if self.mapa.mapa[f][c] == 0:
+                    self.pantalla.blit(self.texturas[0], [c * TAM_TEXTURA, f * TAM_TEXTURA])  # " "
+                if self.mapa.mapa[f][c] == 1:
+                    self.pantalla.blit(self.texturas[1], [c * TAM_TEXTURA, f * TAM_TEXTURA])  # "#"
+                if self.mapa.mapa[f][c] == 2:
+                    self.pantalla.blit(self.texturas[2], [c * TAM_TEXTURA, f * TAM_TEXTURA])  # "T"
+                if self.mapa.mapa[f][c] == 3:
+                    self.pantalla.blit(self.texturas[3], [c * TAM_TEXTURA, f * TAM_TEXTURA])  # "S"
+
+    def dibujarRecorrido(self, camino):
+
+        self.crearMapa()  # Creamos el entorno
+        longitud = len(camino) - 1  # Hasta uno antes de la salida
+
+        for i in range(longitud):
+            self.pantalla.blit(self.texturas[4], [camino[i][1] * TAM_TEXTURA, camino[i][0] * TAM_TEXTURA])
+            pygame.display.update()
+
+            time.sleep(TIEMPO_ESPERA)  # Para alcanzar a visualizar el cambio en los componentes
+
+            if i is not longitud:
+                self.pantalla.blit(self.texturas[0], [camino[i][1] * TAM_TEXTURA, camino[i][0] * TAM_TEXTURA])
+                pygame.display.update()
+
+        salida = self.buscarSalida()
+
+        # Cerrar puerta
+        self.pantalla.blit(self.texturas[2], [salida[0] * TAM_TEXTURA, salida[1] * TAM_TEXTURA])  # "S"
+        pygame.display.update()
+
+    def dibujarMapa(self):
+        self.crearMapa()
+        pygame.display.update()
+
+    # Mantiene la ventana visible
+    def visualizar(self):
+
+        salida = False
+        reloj = pygame.time.Clock()
+
+        while salida is not True:
+            for event in pygame.event.get():
+                if event.type is pygame.QUIT:
+                    salida = True
+
+            reloj.tick(30)
+            pygame.display.update()
+
+        pygame.quit()
+
+    def buscarSalida(self):
+
+        salida = [0, 0]
+        for f in range(self.mapa.fil):
+            for c in range(self.mapa.col):
+                if self.mapa.mapa[f][c] == 3:
+                    salida = [c, f]
+                    break
+        return salida
 
 # ---------------------------------------------------------------------
 # Funciones
@@ -418,8 +456,10 @@ def resolverLaberinto(mapa):
 
     A = AEstrella(mapa)
     globals()["Fin"] = True
-    # mapa.caminoTexto(A.camino)
-    mapa.caminoGrafico(A.camino)
+    mapa.camino(A.camino)
+    g = Grafica(mapa)
+    g.dibujarRecorrido(A.camino)
+    g.visualizar()
     os.system("cls")
 
 # ---------------------------------------------------------------------
