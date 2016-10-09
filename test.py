@@ -83,3 +83,5 @@ a = duotest[0]
 
 print "a:" + a
 print duotest
+
+print abs(0)
