@@ -96,17 +96,25 @@ class AEstrella:
         g = Grafica(self.mapa)
 
         while self.objetivo():
-            print "inicial: " + str(self.inicio.pos)
-            print "actual: " + str(self.cerrada[-1].pos)
-            print "final: " + str(self.fin.pos)
+
             g.dibujarMapa()
+            g.dibujarPaso(self.cerrada[-1])
+            time.sleep(TIEMPO_ESPERA)
+            g.borrarPaso(self.cerrada[-1])
+            time.sleep(TIEMPO_ESPERA)
             print "Dentro de A Estrella"
             if self.fin.pos != pos_f:
-                print "Mapa cambiado"
-                time.sleep(TIEMPO_ESPERA)
-                self.reInicio(self.inicio, self.cerrada[-1])
-                self.recargar(self.mapa)
-                time.sleep(TIEMPO_ESPERA)
+                if self.cerrada[-1].pos is not pos_f:
+                    print "Mapa cambiado"
+                    time.sleep(TIEMPO_ESPERA)
+                    self.reInicio(self.inicio, self.cerrada[-1])
+                    self.recargar(self.mapa)
+                    time.sleep(TIEMPO_ESPERA)
+                else:
+                    print "Mapa choque"
+                    print "actual: " + str(self.cerrada[-1].pos)
+                    print "final n: " + str(pos_f)
+                    g.visualizar()
             self.buscar()
 
         print "Fuera de A Estrella"
@@ -202,9 +210,14 @@ class AEstrella:
     # Recargar datos iniciales
     def recargar(self, mapa):
 
-        # Nodos de inicio y fin.
+        print "Dentro de recargar"
+
+        # Nodos de inicio y fin
+
         self.inicio = Nodo(buscarPos(2, mapa))  # busca una T (entrada)
         self.fin = Nodo(buscarPos(3, mapa))  # busca una S (salida)
+        print "recargar inicio: " + str(self.inicio.pos)
+        print "recargar fin: " + str(self.fin.pos)
 
         # Crea las listas abierta y cerrada.
         self.abierta = []
@@ -293,6 +306,23 @@ class Grafica:
                     self.pantalla.blit(self.texturas[2], [c * TAM_TEXTURA, f * TAM_TEXTURA])  # "T"
                 if self.mapa.mapa[f][c] == 3:
                     self.pantalla.blit(self.texturas[3], [c * TAM_TEXTURA, f * TAM_TEXTURA])  # "S"
+                if self.mapa.mapa[f][c] == 4:
+                    self.pantalla.blit(self.texturas[0], [c * TAM_TEXTURA, f * TAM_TEXTURA])  # "." En caso de haber
+
+    def dibujarMapa(self):
+        self.crearMapa()
+        pygame.display.update()
+
+    def dibujarPaso(self, nodo):
+
+        self.crearMapa()
+        self.pantalla.blit(self.texturas[4], [nodo.pos[1] * TAM_TEXTURA, nodo.pos[0] * TAM_TEXTURA])
+        pygame.display.update()
+
+    def borrarPaso(self, nodo):
+        self.crearMapa()
+        self.pantalla.blit(self.texturas[0], [nodo.pos[1] * TAM_TEXTURA, nodo.pos[0] * TAM_TEXTURA])
+        pygame.display.update()
 
     def dibujarRecorrido(self, camino):
 
@@ -313,10 +343,6 @@ class Grafica:
 
         # Cerrar puerta
         self.pantalla.blit(self.texturas[2], [salida[0] * TAM_TEXTURA, salida[1] * TAM_TEXTURA])  # "S"
-        pygame.display.update()
-
-    def dibujarMapa(self):
-        self.crearMapa()
         pygame.display.update()
 
     # Mantiene la ventana visible
@@ -456,13 +482,18 @@ def resolverLaberinto(mapa):
 
     A = AEstrella(mapa)
     globals()["Fin"] = True
-    mapa.camino(A.camino)
+    # mapa.camino(A.camino)
     g = Grafica(mapa)
     g.dibujarRecorrido(A.camino)
+    longitud = len(A.camino)
+
+    for i in range(longitud):
+        print "pos: " + str(A.camino[i])
     g.visualizar()
     os.system("cls")
 
 # ---------------------------------------------------------------------
+
 
 def main():
 
