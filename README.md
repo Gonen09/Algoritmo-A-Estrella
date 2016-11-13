@@ -1,17 +1,19 @@
-Algoritmo-A-Estrella
+Algoritmo A Estrella
 ====================
 
-Algoritmo a* con interfaz de usuario en Python
+Algoritmo a* implementado en Python
 
-Desarrollo de buscador en laberintos con meta cambiante, utilizando el algoritmo A*.
+## Contexto
 
-## Objetivo:
+Desarrollo de un laberintos con meta cambiante, utilizando el algoritmo A*.
+
+## Objetivo
 
 Mostrar el camino recorrido del desde un punto A hasta un B en un laberinto predeterminado,
 en ocasiones el punto B puede cambiar de ubicación mientras se va mostrando el recorrido.
 En ese caso se debe mostrar el nuevo camino.
 
-## Resumen:
+## Resumen
 
 Para poder cumplir el objetivo se guardan las posiciones iniciales de A y B, para mostrar
 el recorrido mostramos las posiciones una por una del camino entregado por el algoritmo A*,
